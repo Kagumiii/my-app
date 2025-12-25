@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% if color_scheme %}
+<style>
+    :root {
+        --primary-color: {{ color_scheme.primary_hex }};
+        --primary-dark: {{ color_scheme.dark_hex }};
+        --primary-light: {{ color_scheme.light_hex }};
+        --accent-color: {{ color_scheme.accent_hex }};
+    }
+
+    .game-detail {
+        border-color: var(--primary-color);
+        background: linear-gradient(135deg, #020617 0%, var(--primary-dark) 100%);
+    }
+
+    .game-tag {
+        background: rgba(var(--primary-rgb), 0.2);
+        color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    .btn.primary {
+        background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    }
+
+    .tracks-section, .reviews-section {
+        border-color: var(--primary-color);
+    }
+
+    .track-item:hover, .review-item:hover {
+        border-color: var(--primary-color);
+    }
+</style>
+{% endif %}
+<div class="container">
+    <!-- Кнопки навигации -->
+    <div class="top-bar">
+        <a class="btn" href="{{ url_for('index') }}">← На главную</a>
+        <a class="btn primary" href="{{ url_for('edit_game', game_id=game.id) }}">
+            ✏️ Редактировать игру
+        </a>
+    </div>
+
+    <!-- Информация об игре -->
+    <div class="game-detail">
+        <div class="game-detail-container">
+            {% if game.cover %}
+            <div class="game-detail-image">
+                <img src="{{ url_for('static', filename='covers/' + game.cover) }}" alt="{{ game.title }}">
+            </div>
+            {% endif %}
+
+            <div class="game-detail-info">
+                <div class="game-tags">
+                    <div class="game-tag">{{ game.genre }}</div>
+                    <div class="game-tag">{{ game.year }}</div>
+                    {% if game.playtime %}
+                    <div class="game-tag playtime-tag">
+                        ⏱️ {{ game.playtime }} ч
+                    </div>
+                    {% endif %}
+                </div>
+
+                <p class="game-description">
+                    {{ game.description }}
+                </p>
+
+                <!-- Кнопка удаления игры -->
+                <form method="post"
+                      action="{{ url_for('delete_game', game_id=game.id) }}"
+                      onsubmit="return confirm('Вы уверены что хотите удалить игру и все её треки?')">
+                    <button class="btn danger" type="submit">
+                        🗑️ Удалить игру
+                    </button>
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Секция с OST -->
+    <div class="tracks-section">
+        <div class="tracks-header">
+            <h2>🎵 Саундтреки ({{ tracks|length }})</h2>
+        </div>
+
+        {% if tracks %}
+        <div class="tracks-list">
+            {% for track in tracks %}
+            <div class="track-item">
+                <div class="track-content">
+                    <div class="track-icon">🎵</div>
+                    <div class="track-info">
+                        <div class="track-name">{{ track.name }}</div>
+                        <audio controls>
+                            <source src="{{ url_for('static', filename='audio/' + track.file) }}">
+                            Ваш браузер не поддерживает аудио.
+                        </audio>
+                    </div>
+                </div>
+
+                <form method="post"
+                      action="{{ url_for('delete_track', track_id=track.id, game_id=game.id) }}"
+                      onsubmit="return confirm('Удалить трек?')">
+                    <button class="btn danger" type="submit">
+                        ❌ Удалить
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-tracks">
+            <p>Пока нет добавленных саундтреков</p>
+        </div>
+        {% endif %}
+
+        <!-- Форма добавления нового трека -->
+        <div class="add-track-form">
+            <h3>➕ Добавить новый трек</h3>
+            <form method="post"
+                  action="{{ url_for('add_track', game_id=game.id) }}"
+                  enctype="multipart/form-data"
+                  class="form-card">
+                <div class="track-form-grid">
+                    <div>
+                        <label>Название трека:</label>
+                        <input type="text" name="name" placeholder="Например: Main Theme" required>
+                    </div>
+                    <div>
+                        <label>Аудио файл (MP3):</label>
+                        <input type="file" name="file" accept=".mp3" required>
+                    </div>
+                </div>
+                <button class="btn wide" type="submit">
+                    📁 Загрузить трек
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Секция с заметками (только для вас) -->
+    <div class="reviews-section">
+        <div class="reviews-header">
+            <h2>📝 Мои заметки об игре
+                {% if avg_rating > 0 %}
+                <span class="avg-rating">★ {{ avg_rating }}/5</span>
+                {% endif %}
+            </h2>
+            <span class="reviews-count">{{ reviews|length }} заметок</span>
+        </div>
+
+        <!-- Форма для добавления заметки -->
+        <div class="add-review-form">
+            <h3>➕ Добавить заметку</h3>
+            <form method="post"
+                action="{{ url_for('add_review', game_id=game.id) }}"
+                enctype="multipart/form-data"
+                class="form-card">
+            <div>
+                <label>Моя оценка:</label>
+                <select name="rating" required>
+                    <option value="" disabled selected>Выберите оценку</option>
+                    <option value="5">★★★★★ - Отлично</option>
+                    <option value="4">★★★★☆ - Хорошо</option>
+                    <option value="3">★★★☆☆ - Нормально</option>
+                    <option value="2">★★☆☆☆ - Плохо</option>
+                    <option value="1">★☆☆☆☆ - Ужасно</option>
+                </select>
+            </div>
+            <div>
+                <label>Мои впечатления:</label>
+                <textarea name="text" placeholder="Что думаю об этой игре? Какие треки понравились?"
+                      rows="3" required></textarea>
+            </div>
+            <div>
+                <label>Добавить скриншот/фото (необязательно):</label>
+                <input type="file" name="image" accept=".jpg,.png,.jpeg,.gif,.webp">
+                <div style="color: #94a3b8; font-size: 12px; margin-top: 5px;">
+                    💡 Можно прикрепить скриншот игры, фото коллекции и т.д.
+                </div>
+            </div>
+            <button class="btn wide" type="submit">
+                💾 Сохранить заметку
+            </button>
+        </form>
+    </div>
+
+        <!-- Список заметок -->
+        {% if reviews %}
+        <div class="reviews-list">
+            {% for review in reviews %}
+            <div class="review-item">
+                <div class="review-header">
+                    <div class="review-meta">
+                        <div class="review-rating">
+                            {% for i in range(5) %}
+                                {% if i < review.rating %}
+                                <span class="star filled">★</span>
+                                {% else %}
+                                <span class="star">☆</span>
+                                {% endif %}
+                            {% endfor %}
+                            <span class="rating-number">{{ review.rating }}/5</span>
+                        </div>
+                        {% if review.created_at %}
+                        <div class="review-date">
+                            📅 {{ review.created_at[:10] }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Если есть изображение -->
+                {% if review.image %}
+                <div class="review-image-container">
+                    <img src="{{ url_for('static', filename='review_images/' + review.image) }}"
+                         alt="Скриншот"
+                         class="review-image"
+                         onclick="openImageModal('{{ url_for('static', filename='review_images/' + review.image) }}')">
+                </div>
+                {% endif %}
+
+                <div class="review-text">
+                    {{ review.text }}
+                </div>
+
+                <!-- Кнопка удаления -->
+                <form method="post"
+                      action="{{ url_for('delete_review', review_id=review.id, game_id=game.id) }}"
+                      onsubmit="return confirm('Удалить заметку?')"
+                      style="margin-top: 10px; text-align: right;">
+                    <button type="submit" class="btn danger" style="padding: 5px 10px; font-size: 12px;">
+                        🗑️ Удалить
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-reviews">
+            <p>Пока нет заметок. Добавьте первую!</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Модальное окно для просмотра изображений -->
+<div id="imageModal" class="modal">
+    <span class="close" onclick="closeImageModal()">&times;</span>
+    <img class="modal-content" id="modalImage">
+</div>
+
+<script>
+// Функции для модального окна
+function openImageModal(imageSrc) {
+    const modal = document.getElementById("imageModal");
+    const modalImg = document.getElementById("modalImage");
+    modal.style.display = "block";
+    modalImg.src = imageSrc;
+}
+
+function closeImageModal() {
+    document.getElementById("imageModal").style.display = "none";
+}
+
+// Закрыть модальное окно при клике вне изображения
+window.onclick = function(event) {
+    const modal = document.getElementById("imageModal");
+    if (event.target == modal) {
+        closeImageModal();
+    }
+}
+</script>
+{% endblock %}

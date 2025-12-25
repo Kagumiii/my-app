@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="edit-container">
+        <!-- Форма редактирования игры -->
+        <div class="form-section">
+            <h2>Основная информация</h2>
+            <form method="post" enctype="multipart/form-data" class="form-card">
+                <label>Название:</label>
+                <input type="text" name="title" value="{{ game.title }}" required>
+
+                <label>Жанр:</label>
+                <input type="text" name="genre" value="{{ game.genre }}" required>
+
+                <label>Год выпуска:</label>
+                <input type="number" name="year" value="{{ game.year }}" required>
+
+                <label>Описание:</label>
+                <textarea name="description" rows="4" required>{{ game.description }}</textarea>
+
+                <label>Время прохождения (часы):</label>
+                <input type="number" name="playtime" value="{{ game.playtime if game.playtime else '' }}" min="0" step="0.5" placeholder="Например: 8">
+
+                {% if game.cover %}
+                <label>Текущая обложка:</label>
+                <img src="{{ url_for('static', filename='covers/' + game.cover) }}"
+                     class="current-cover">
+                {% endif %}
+
+                <label>Новая обложка (необязательно):</label>
+                <input type="file" name="cover" accept=".jpg,.png,.jpeg">
+
+                <div class="form-actions">
+                    <button class="btn" type="submit">💾 Сохранить изменения</button>
+                    <a class="btn secondary" href="{{ url_for('game', game_id=game.id) }}">
+                        🔙 Назад к игре
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Секция с OST -->
+        <div class="tracks-section">
+            <h2>🎵 Саундтреки</h2>
+
+            {% if tracks %}
+            <div class="tracks-list">
+                {% for track in tracks %}
+                <div class="track-item">
+                    <div class="track-content">
+                        <div class="track-icon">🎵</div>
+                        <div class="track-info">
+                            <div class="track-name">{{ track.name }}</div>
+                            <audio controls>
+                                <source src="{{ url_for('static', filename='audio/' + track.file) }}">
+                                Ваш браузер не поддерживает аудио.
+                            </audio>
+                        </div>
+                    </div>
+                    <form method="post"
+                          action="{{ url_for('delete_track', track_id=track.id, game_id=game.id) }}"
+                          onsubmit="return confirm('Удалить трек?')">
+                        <button class="btn danger" type="submit">
+                            ❌ Удалить
+                        </button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="no-tracks">
+                <p>Нет добавленных треков</p>
+            </div>
+            {% endif %}
+
+            <!-- Форма добавления нового трека -->
+            <div class="add-track-form">
+                <h3>➕ Добавить OST</h3>
+                <form method="post"
+                      action="{{ url_for('add_track', game_id=game.id) }}"
+                      enctype="multipart/form-data"
+                      class="form-card">
+                    <div class="track-form-grid">
+                        <div>
+                            <label>Название трека:</label>
+                            <input type="text" name="name" placeholder="Например: Main Theme" required>
+                        </div>
+                        <div>
+                            <label>Аудио файл (MP3):</label>
+                            <input type="file" name="file" accept=".mp3" required>
+                        </div>
+                    </div>
+                    <button class="btn wide" type="submit">
+                        📁 Загрузить трек
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

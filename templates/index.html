@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="top-bar">
+        <a class="btn primary" href="{{ url_for('add_game') }}">
+            ➕ Добавить игру
+        </a>
+        <form class="search-form" action="{{ url_for('search') }}" method="get">
+            <input type="text" name="q" placeholder="Поиск по названию..." value="{{ request.args.get('q', '') }}">
+            <button type="submit">🔍</button>
+        </form>
+    </div>
+
+    <div class="games">
+        {% for game in games %}
+        <div class="card"
+             {% if game.color_scheme %}
+             style="border-color: {{ game.color_scheme.primary_hex }};
+                    box-shadow: 0 4px 15px {{ game.color_scheme.primary_hex }}30;"
+             {% endif %}>
+
+            {% if game.cover %}
+            <img src="{{ url_for('static', filename='covers/' + game.cover) }}"
+                 alt="{{ game.title }}"
+                 {% if game.color_scheme %}
+                 style="border-bottom: 3px solid {{ game.color_scheme.primary_hex }};"
+                 {% endif %}>
+            {% else %}
+            <div style="height: 200px; background: #1e293b; display: flex; align-items: center; justify-content: center; color: #94a3b8;">
+                🎮 Нет обложки
+            </div>
+            {% endif %}
+
+            <div class="card-body">
+                <h3 {% if game.color_scheme %}style="color: {{ game.color_scheme.primary_hex }};"{% endif %}>
+                    {{ game.title }}
+                </h3>
+                <p>{{ game.description[:100] }}{% if game.description|length > 100 %}...{% endif %}</p>
+
+                <div class="game-tags">
+                    <div class="game-tag">{{ game.genre }}</div>
+                    <div class="game-tag">{{ game.year }}</div>
+                    {% if game.playtime %}
+                    <div class="game-tag playtime-tag"
+                         {% if game.color_scheme %}
+                         style="background: {{ game.color_scheme.accent_hex }}20;
+                                color: {{ game.color_scheme.accent_hex }};
+                                border-color: {{ game.color_scheme.accent_hex }};"
+                         {% endif %}>
+                        ⏱️ {{ game.playtime }}ч
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="actions">
+                    <a class="btn" href="{{ url_for('game', game_id=game.id) }}">
+                        Просмотр
+                    </a>
+                    <a class="btn" href="{{ url_for('edit_game', game_id=game.id) }}">
+                        Редактировать
+                    </a>
+                    <form method="post"
+                          action="{{ url_for('delete_game', game_id=game.id) }}"
+                          onsubmit="return confirm('Удалить игру?')">
+                        <button class="btn danger" type="submit">
+                            🗑️ Удалить игру
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
