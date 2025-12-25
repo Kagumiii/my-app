@@ -6,7 +6,6 @@ from color_utils import get_dominant_color, get_color_scheme, rgb_to_hex
 import json
 
 app = Flask(__name__)
-port = int(os.environ.get("PORT", 10000))
 DATABASE = "database.db"
 
 UPLOAD_FOLDER = "static/audio"
@@ -363,5 +362,5 @@ def delete_review(review_id, game_id):
     return redirect(url_for("game", game_id=game_id))
 
 if __name__ == "__main__":
-    app.run(debug=False, host='0.0.0.0', port=port)
+    app.run(debug=True)
 
